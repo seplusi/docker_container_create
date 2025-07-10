@@ -17,7 +17,7 @@ COPY startup_script.sh startup_script.sh
 RUN chmod 777 startup_script.sh
 
 RUN apt update
-RUN apt install python3.10 -y
+RUN apt-get install python3.10 -y
 RUN apt install python3-pip -y
 
 CMD ["./startup_script.sh"]

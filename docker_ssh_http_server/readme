@@ -1,0 +1,82 @@
+There's no need to get the ubuntu image. Dockerfile has the ubuntu image to get and pulls it automatically. 
+
+Biuld and image based in latest ubuntu image and adds all necessary packages to run a ssh server and a very simple http server (python one)
+# sudo docker build -f ./Dockerfile . -t http_ssh_srv_img
+
+Check what images were created
+# sudo docker image ls
+REPOSITORY         TAG       IMAGE ID       CREATED         SIZE
+http_ssh_srv_img   latest    92a1319c67a9   3 minutes ago   692MB
+#
+
+Create container mapping container ports (22 and 8000) to external ports (8000 and 9000) so container services can be accessed.
+When the container is started we execute script startup_script.sh which starts the 2 services and performs a sleep
+# sudo docker run -p 8000:22 -p 9000:8000 http_ssh_srv_img                                           
+ * Starting OpenBSD Secure Shell server sshd
+   ...done.
+UID          PID    PPID  C STIME TTY          TIME CMD
+root           1       0  9 10:17 ?        00:00:00 /bin/bash ./startup_script.sh
+root          17       1  0 10:17 ?        00:00:00 sshd: /usr/sbin/sshd [listener] 0 of 10-100 startups
+root          18       1  0 10:17 ?        00:00:00 python3 -m http.server 8000
+root          19       1  0 10:17 ?        00:00:00 ps -ef
+
+Verify running container was created
+# ssudo docker container ls
+CONTAINER ID   IMAGE              COMMAND                 CREATED              STATUS              PORTS                                                                                  NAMES
+39a45a5c743f   http_ssh_srv_img   "./startup_script.sh"   About a minute ago   Up About a minute   0.0.0.0:8000->22/tcp, [::]:8000->22/tcp, 0.0.0.0:9000->8000/tcp, [::]:9000->8000/tcp   recursing_ardinghelli
+#
+
+Enter container and see if services are running
+# sudo docker exec -ti 39a45a5c743f bash
+root@ed3fef49167c:~# ps -ef
+UID          PID    PPID  C STIME TTY          TIME CMD
+root           1       0  0 10:17 ?        00:00:00 /bin/bash ./startup_script.s
+root          17       1  0 10:17 ?        00:00:00 sshd: /usr/sbin/sshd [listen
+root          18       1  0 10:17 ?        00:00:00 python3 -m http.server 8000
+root          20       1  0 10:17 ?        00:00:00 sleep 10000
+root          21       0  1 10:21 pts/0    00:00:00 bash
+root          30      21 99 10:21 pts/0    00:00:00 ps -ef
+root@ed3fef49167c:~# exit
+exit
+#
+
+Test container ssh service
+# ssh root@127.0.0.1 -p 8000
+The authenticity of host '[127.0.0.1]:8000 ([127.0.0.1]:8000)' can't be established.
+ED25519 key fingerprint is SHA256:dMhThoCRB4/n+F6ptljIKgXMXa0rWCcNAChqmdNrDWA.
+This key is not known by any other names
+Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
+Warning: Permanently added '[127.0.0.1]:8000' (ED25519) to the list of known hosts.
+root@127.0.0.1's password: 
+Welcome to Ubuntu 24.04.2 LTS (GNU/Linux 5.15.0-142-generic x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/pro
+
+This system has been minimized by removing packages and content that are
+not required on a system that users do not log into.
+
+To restore this content, you can run the 'unminimize' command.
+
+The programs included with the Ubuntu system are free software;
+the exact distribution terms for each program are described in the
+individual files in /usr/share/doc/*/copyright.
+
+Ubuntu comes with ABSOLUTELY NO WARRANTY, to the extent permitted by
+applicable law.
+
+root@39a45a5c743f:~# hostname
+39a45a5c743f
+root@39a45a5c743f:~# 
+
+Test container http service
+Place http://127.0.0.1:9000/ in a web browser. You should see the following:
+Directory listing for /
+
+    .bash_history
+    .bashrc
+    .cache/
+    .profile
+    .ssh/
+    startup_script.sh
