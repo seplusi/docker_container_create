@@ -72,3 +72,9 @@ docker_compose-ssh_server-1    ssh_server_img    "bash -c 'service ss…"   ssh_
  ✔ Container docker_compose-ssh_server-1   Removed                                                 13.4s 
  ✔ Network docker_compose_default          Removed                                                  0.8s 
 #
+
+7) Images were created as a result of docker compose
+# sudo docker image ls
+REPOSITORY         TAG       IMAGE ID       CREATED             SIZE
+ssh_server_img     latest    cb0c9d9ab4e9   About an hour ago   324MB
+http_server_img    latest    6b1a72252b10   About an hour ago   549MB
