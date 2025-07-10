@@ -1,0 +1,74 @@
+Pre-requesites:
+1) Have a Dockerfile for each container image
+2) Have a docker-compose.yaml file with both containers configuration
+3) docker compose up
+4) All docker coompose commands must be executed from where the docker-compose.yal file is. This is how "docker compose" knows about the containers and what has created
+
+
+1) Dockerfiles. Each file has the specific config for each service. Unlike a container that has both services, here we can specify only the needed steps to create a very specific with a very specific function
+Dockerfile_http_server
+Dockerfile_ssh_server
+
+2) docker/compose.yaml file.
+services:
+  http_server:
+    image: http_server_img
+    build:
+      dockerfile: ./Dockerfile_http_server
+    ports:
+      - "9000:8000"
+
+  ssh_server:
+    image: ssh_server_img
+    build:
+      dockerfile: ./Dockerfile_ssh_server
+    ports:
+      - "8000:22"
+    command: bash -c "service ssh start && sleep 1000000"
+
+We're going to create 2 containers:
+services: First we build an image called ssh_server_img using docker file Dockerfile_http_server. Then we start a container with name http_server using that image and mapping the ports to have access to the container http service
+ssh_server: First we build an image called ssh_server_img using docker file Dockerfile_ssh_server. Then we start a container with name ssh_server using that image and mapping the ports to have access to the container ssh service
+
+
+3) Create everything by executing docker-compose
+# docker compose up
+...
+...
+...
+✔ http_server                             Built                                                           0.0s 
+ ✔ ssh_server                              Built                                                           0.0s 
+ ✔ Container docker_compose-http_server-1  Created                                                         2.1s 
+ ✔ Container docker_compose-ssh_server-1   Created                                                         2.1s 
+Attaching to http_server-1, ssh_server-1
+ssh_server-1   |  * Starting OpenBSD Secure Shell server sshd
+ssh_server-1   |    ...done.
+
+4) Check containers exist and are running and have the mapped ports
+# sudo docker container ls
+CONTAINER ID   IMAGE             COMMAND                  CREATED         STATUS         PORTS                                         NAMES
+8f6a2df0670a   ssh_server_img    "bash -c 'service ss…"   7 minutes ago   Up 7 minutes   0.0.0.0:8000->22/tcp, [::]:8000->22/tcp       docker_compose-ssh_server-1
+43524e20a871   http_server_img   "python3 -m http.ser…"   7 minutes ago   Up 7 minutes   0.0.0.0:9000->8000/tcp, [::]:9000->8000/tcp   docker_compose-http_server-1
+#
+
+5) docker compose commands
+# sudo docker compose top
+SERVICE      #   UID   PID    PPID   C   STIME  TTY  TIME      CMD
+http_server  1   root  41550  41510  0   15:33  ?    00:00:00  python3 -m http.server 8000
+ssh_server   1   root  41552  41501  0   15:33  ?    00:00:00  sleep 1000000
+ssh_server   1   root  41668  41552  0   15:33  ?    00:00:00  sshd: /usr/sbin/sshd [listener] 0 of 10-100 startups
+#
+
+# sudo docker compose ps
+NAME                           IMAGE             COMMAND                  SERVICE       CREATED         STATUS         PORTS
+docker_compose-http_server-1   http_server_img   "python3 -m http.ser…"   http_server   2 minutes ago   Up 2 minutes   0.0.0.0:9000->8000/tcp, [::]:9000->8000/tcp
+docker_compose-ssh_server-1    ssh_server_img    "bash -c 'service ss…"   ssh_server    2 minutes ago   Up 2 minutes   0.0.0.0:8000->22/tcp, [::]:8000->22/tcp
+#
+
+6) Stop all services in the docker-compose.yaml file
+# sudo docker compose down
+[+] Running 3/3
+ ✔ Container docker_compose-http_server-1  Removed                                                 13.6s 
+ ✔ Container docker_compose-ssh_server-1   Removed                                                 13.4s 
+ ✔ Network docker_compose_default          Removed                                                  0.8s 
+#
