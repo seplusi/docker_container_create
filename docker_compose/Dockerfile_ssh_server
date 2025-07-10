@@ -1,0 +1,15 @@
+FROM ubuntu:latest
+
+MAINTAINER Luis
+
+USER root
+
+WORKDIR /root
+
+RUN apt-get update
+
+# Install vim editor and netstat cmd
+RUN apt-get install vim -y
+RUN apt install openssh-server -y
+RUN echo "PermitRootLogin yes" >> /etc/ssh/sshd_config
+RUN echo "root:shroot"|chpasswd

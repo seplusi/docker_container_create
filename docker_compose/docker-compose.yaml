@@ -1,0 +1,15 @@
+services:
+  http_server:
+    image: http_server_img
+    build:
+      dockerfile: ./Dockerfile_http_server
+    ports:
+      - "9000:8000"
+
+  ssh_server:
+    image: ssh_server_img
+    build:
+      dockerfile: ./Dockerfile_ssh_server
+    ports:
+      - "8000:22"
+    command: bash -c "service ssh start && sleep 1000000"

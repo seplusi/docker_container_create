@@ -1,0 +1,17 @@
+FROM ubuntu:latest
+
+MAINTAINER Luis
+
+USER root
+
+WORKDIR /root
+
+RUN apt-get update
+
+# Install vim editor and netstat cmd
+RUN apt update
+RUN apt install python3.10 -y
+RUN apt install python3-pip -y
+EXPOSE 8000
+
+CMD ["python3", "-m", "http.server", "8000"]
