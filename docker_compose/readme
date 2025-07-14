@@ -1,6 +1,7 @@
 Pre-requesites:
 1) Have a Dockerfile for each container image
 2) Have a docker-compose.yaml file with both containers configuration
+3) Docker compose build   # Not mandatory
 3) docker compose up
 4) All docker coompose commands must be executed from where the docker-compose.yal file is. This is how "docker compose" knows about the containers and what has created
 
@@ -8,17 +9,23 @@ Pre-requesites:
 1) Dockerfiles. Each file has the specific config for each service. Unlike a container that has both services, here we can specify only the needed steps to create a very specific with a very specific function
 Dockerfile_http_server
 Dockerfile_ssh_server
+Dockerfile_db_server
 
 2) docker/compose.yaml file.
 services:
   http_server:
+    container_name: http_server
     image: http_server_img
     build:
       dockerfile: ./Dockerfile_http_server
     ports:
       - "9000:8000"
+    volumes:
+      - external_volume:/etc/data
+    command: bash -c "python3 -m http.server 8000"
 
   ssh_server:
+    container_name: ssh_server
     image: ssh_server_img
     build:
       dockerfile: ./Dockerfile_ssh_server
@@ -26,9 +33,33 @@ services:
       - "8000:22"
     command: bash -c "service ssh start && sleep 1000000"
 
-We're going to create 2 containers:
-services: First we build an image called ssh_server_img using docker file Dockerfile_http_server. Then we start a container with name http_server using that image and mapping the ports to have access to the container http service
+  mariadb_server:
+    container_name: mariadb_server
+    image: db_server
+    build:
+      dockerfile: ./Dockerfile_db_server
+    ports:
+      - "9001:3306"
+    volumes:
+      - external_volume:/etc/data
+    restart: always
+    environment:
+      MARIADB_ROOT_PASSWORD: password
+
+networks:
+  default: 
+    name: my_network
+
+volumes:
+  external_volume:
+
+
+
+We're going to create 3 containers:
+http_server: First we build an image called http_server_img using docker file Dockerfile_http_server. Then we start a container with name http_server using that image and mapping the ports to have access to the container http service
 ssh_server: First we build an image called ssh_server_img using docker file Dockerfile_ssh_server. Then we start a container with name ssh_server using that image and mapping the ports to have access to the container ssh service
+mariadb_server: First we build an image called db_server using docker file Dockerfile_db_server. Then we start a container with name mariadb_server using that image and mapping the ports to have access to the container ssh service. The container will remain running because the mariadb service is running in the foreground. As functionality of mariadb startup, an init script under folder mariadb_container_files is executed and configures mariadb to allow access from other containers
+
 
 
 3) Create everything by executing docker-compose
@@ -46,35 +77,40 @@ ssh_server-1   |    ...done.
 
 4) Check containers exist and are running and have the mapped ports
 # sudo docker container ls
-CONTAINER ID   IMAGE             COMMAND                  CREATED         STATUS         PORTS                                         NAMES
-8f6a2df0670a   ssh_server_img    "bash -c 'service ss…"   7 minutes ago   Up 7 minutes   0.0.0.0:8000->22/tcp, [::]:8000->22/tcp       docker_compose-ssh_server-1
-43524e20a871   http_server_img   "python3 -m http.ser…"   7 minutes ago   Up 7 minutes   0.0.0.0:9000->8000/tcp, [::]:9000->8000/tcp   docker_compose-http_server-1
+CONTAINER ID   IMAGE             COMMAND                  CREATED          STATUS          PORTS                                         NAMES
+16a821986778   db_server         "docker-entrypoint.s…"   12 minutes ago   Up 11 minutes   0.0.0.0:9001->3306/tcp, [::]:9001->3306/tcp   mariadb_server
+5c2d4051f4d2   ssh_server_img    "bash -c 'service ss…"   12 minutes ago   Up 12 minutes   0.0.0.0:8000->22/tcp, [::]:8000->22/tcp       ssh_server
+cc21bc452ce9   http_server_img   "bash -c 'python3 -m…"   12 minutes ago   Up 12 minutes   0.0.0.0:9000->8000/tcp, [::]:9000->8000/tcp   http_server
 #
 
 5) docker compose commands
 # sudo docker compose top
-SERVICE      #   UID   PID    PPID   C   STIME  TTY  TIME      CMD
-http_server  1   root  41550  41510  0   15:33  ?    00:00:00  python3 -m http.server 8000
-ssh_server   1   root  41552  41501  0   15:33  ?    00:00:00  sleep 1000000
-ssh_server   1   root  41668  41552  0   15:33  ?    00:00:00  sshd: /usr/sbin/sshd [listener] 0 of 10-100 startups
+SERVICE         #   UID       PID    PPID   C   STIME  TTY  TIME      CMD
+http_server     1   root      13108  13029  0   14:39  ?    00:00:00  python3 -m http.server 8000
+mariadb_server  1   systemd+  13484  13462  0   14:40  ?    00:00:01  mariadbd
+ssh_server      1   root      13096  13027  0   14:39  ?    00:00:00  sleep 1000000
+ssh_server      1   root      13338  13096  0   14:40  ?    00:00:00  sshd: /usr/sbin/sshd [listener] 0 of 10-100 startups
 #
 
 # sudo docker compose ps
-NAME                           IMAGE             COMMAND                  SERVICE       CREATED         STATUS         PORTS
-docker_compose-http_server-1   http_server_img   "python3 -m http.ser…"   http_server   2 minutes ago   Up 2 minutes   0.0.0.0:9000->8000/tcp, [::]:9000->8000/tcp
-docker_compose-ssh_server-1    ssh_server_img    "bash -c 'service ss…"   ssh_server    2 minutes ago   Up 2 minutes   0.0.0.0:8000->22/tcp, [::]:8000->22/tcp
+NAME             IMAGE             COMMAND                  SERVICE          CREATED          STATUS          PORTS
+http_server      http_server_img   "bash -c 'python3 -m…"   http_server      22 minutes ago   Up 22 minutes   0.0.0.0:9000->8000/tcp, [::]:9000->8000/tcp
+mariadb_server   db_server         "docker-entrypoint.s…"   mariadb_server   22 minutes ago   Up 21 minutes   0.0.0.0:9001->3306/tcp, [::]:9001->3306/tcp
+ssh_server       ssh_server_img    "bash -c 'service ss…"   ssh_server       22 minutes ago   Up 22 minutes   0.0.0.0:8000->22/tcp, [::]:8000->22/tcp
 #
 
 6) Stop all services in the docker-compose.yaml file
 # sudo docker compose down
-[+] Running 3/3
- ✔ Container docker_compose-http_server-1  Removed                                                 13.6s 
- ✔ Container docker_compose-ssh_server-1   Removed                                                 13.4s 
- ✔ Network docker_compose_default          Removed                                                  0.8s 
-#
++] Running 4/4
+ ✔ Container http_server     Removed                                                                                              13.2s 
+ ✔ Container mariadb_server  Removed                                                                                               2.8s 
+ ✔ Container ssh_server      Removed                                                                                              13.2s 
+ ✔ Network my_network        Removed           #
 
 7) Images were created as a result of docker compose
 # sudo docker image ls
-REPOSITORY         TAG       IMAGE ID       CREATED             SIZE
-ssh_server_img     latest    cb0c9d9ab4e9   About an hour ago   324MB
-http_server_img    latest    6b1a72252b10   About an hour ago   549MB
+REPOSITORY         TAG       IMAGE ID       CREATED          SIZE
+http_server_img    latest    d011e309530b   24 minutes ago   659MB
+ssh_server_img     latest    13d78d98b152   26 minutes ago   477MB
+db_server          latest    2bf4e8a6fa12   27 minutes ago   472MB
+#
