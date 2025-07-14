@@ -1,0 +1,14 @@
+FROM mariadb:lts-ubi9
+
+MAINTAINER Luis
+
+USER root
+
+WORKDIR /root
+
+# Set environment variables (optional, but recommended)
+ENV MYSQL_ROOT_PASSWORD=example
+ENV MYSQL_DATABASE=mydatabase
+
+# Copy the SQL script into the container. It also creates a user and allows connection from anywhere
+COPY ./mariadb_container_files/init.sql /docker-entrypoint-initdb.d/

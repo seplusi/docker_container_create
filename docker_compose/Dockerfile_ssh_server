@@ -13,3 +13,6 @@ RUN apt-get install vim -y
 RUN apt install openssh-server -y
 RUN echo "PermitRootLogin yes" >> /etc/ssh/sshd_config
 RUN echo "root:shroot"|chpasswd
+RUN apt-get update && apt-get install -y iputils-ping
+# I can access the mariadb server using the command: mariadb -h mariadb_server -u user -ppassword
+RUN apt install mariadb-client -y

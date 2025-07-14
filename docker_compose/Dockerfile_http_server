@@ -10,8 +10,10 @@ RUN apt-get update
 
 # Install vim editor and netstat cmd
 RUN apt update
+RUN apt-get update && apt-get install -y iputils-ping
 RUN apt-get install python3.10 -y
 RUN apt install python3-pip -y
+RUN apt install openssh-client -y
+# I can access the mariadb server using the command: mariadb -h mariadb_server -u user -ppassword
+RUN apt install mariadb-client -y
 EXPOSE 8000
-
-CMD ["python3", "-m", "http.server", "8000"]

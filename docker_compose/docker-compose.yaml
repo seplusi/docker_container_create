@@ -1,15 +1,41 @@
 services:
   http_server:
+    container_name: http_server
     image: http_server_img
     build:
       dockerfile: ./Dockerfile_http_server
     ports:
       - "9000:8000"
+    volumes:
+      - external_volume:/etc/data
+    command: bash -c "python3 -m http.server 8000"
 
   ssh_server:
+    container_name: ssh_server
     image: ssh_server_img
     build:
       dockerfile: ./Dockerfile_ssh_server
     ports:
       - "8000:22"
     command: bash -c "service ssh start && sleep 1000000"
+
+  mariadb_server:
+    container_name: mariadb_server
+    image: db_server
+    build:
+      dockerfile: ./Dockerfile_db_server
+    ports:
+      - "9001:3306"
+    volumes:
+      - external_volume:/etc/data
+    restart: always
+    environment:
+      MARIADB_ROOT_PASSWORD: password
+
+networks:
+  default: 
+    name: my_network
+
+volumes:
+  external_volume:
+
